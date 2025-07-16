@@ -137,6 +137,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.slf4j.api)
     implementation(libs.kotlin.logging)
+    testImplementation("org.jetbrains.kotlin:kotlin-test")
 
     when (applicationLogging) {
         Logging.NONE -> {
