@@ -27,6 +27,17 @@ class Matrix(val rows: Int, val cols: Int) {
         return result
     }
 
+    fun row(i: Int): DoubleArray {
+        return data[i]
+    }
+    fun column(j: Int): DoubleArray {
+        val result = DoubleArray(rows)
+        for (i in 0 until rows) {
+            result[i] = this[i, j]
+        }
+        return result
+    }
+
 
     /**
      * Checks if the given matrix is symmetric within a specified tolerance.

@@ -2,8 +2,10 @@ import lib.Graph
 import lib.Link
 import lib.Matrix
 import lib.Node
-import lib.adjacencyMatrix
-import lib.degreeMatrix
+import lib.SparseMatrix
+import lib.adjacencySparseMatrix
+import lib.checkIntegrity
+import lib.degreeSparseMatrix
 import lib.minus
 import lib.normalize
 import lib.plus
@@ -34,11 +36,10 @@ fun main() {
                 g.nodes.add(MyNode(g.nodes.size, p))
             }
 
-            val map = pts.mapIndexed { index, vector2 ->Pair(vector2, index) }.toMap()
+            val map = pts.mapIndexed { index, vector2 -> Pair(vector2, index) }.toMap()
             val kd = pts.kdTree()
 
             for (p in pts) {
-
                 val nearest = kd.findKNearest(p, 3)
                 for (n in nearest) {
                     val source = map[p] ?: error("no source found")
@@ -47,13 +48,14 @@ fun main() {
                 }
             }
 
-            val lm = g.adjacencyMatrix().normalize(g.degreeMatrix())
+            g.adjacencySparseMatrix().checkIntegrity()
+
+            val lm = g.adjacencySparseMatrix().normalize(g.degreeSparseMatrix(), adjacentScale = 2.0)
 
             val signal = Matrix.zeros(g.nodes.size, 1)
-
             var diffused = lm * signal
 
-            fun filter(coeffs: DoubleArray, shift: Matrix, signal: Matrix): Matrix {
+            fun filterSparse(coeffs: DoubleArray, shift: SparseMatrix, signal: Matrix): Matrix {
                 val shifted = mutableListOf<Matrix>()
 
                 var current = signal
@@ -70,7 +72,7 @@ fun main() {
                 return result
             }
 
-            var diffusedHist = MutableList(20) { Matrix.zeros(g.nodes.size, 1) }
+            val diffusedHist = MutableList(20) { Matrix.zeros(g.nodes.size, 1) }
 //            extend(ScreenRecorder()) {
 //                frameRate = 60
 //                maximumDuration = 20.0
@@ -82,7 +84,7 @@ fun main() {
                 if (Double.uniform(0.0, 1.0) < 0.01) {
                     diffused.data[0][0] = 1.0
                 }
-                val newDiffused = filter(doubleArrayOf(1.0, 0.1),lm, diffused) - diffusedHist.last() * 0.062
+                val newDiffused = filterSparse(doubleArrayOf(1.0, 0.1), lm, diffused) - diffusedHist.last() * 0.16
 
                 for (y in 0 until newDiffused.rows) {
                     newDiffused[y, 0] = newDiffused[y, 0].coerceIn(0.0, 1.0)
@@ -98,7 +100,12 @@ fun main() {
                     }
                 }
 
-                drawer.lineSegments(g.links.map { LineSegment(g.nodes[it.source].position, g.nodes[it.target].position) })
+                drawer.lineSegments(g.links.map {
+                    LineSegment(
+                        g.nodes[it.source].position,
+                        g.nodes[it.target].position
+                    )
+                })
             }
         }
     }
